@@ -1,6 +1,6 @@
 import OpenAI from "openai";
 
-export const config = { runtime: "edge" };   // позволяет стримить
+export const config = { runtime: "edge" };
 
 export default async function handler(req) {
   if (req.method !== "POST")
@@ -24,7 +24,7 @@ export default async function handler(req) {
       async start(controller) {
         for await (const chunk of stream) {
           const part = chunk.choices[0]?.delta?.content || "";
-          controller.enqueue(enc.encode(`data:${part}\n\n`));
+          controller.enqueue(enc.encode(part));      // ← без data:
         }
         controller.close();
       },
@@ -32,7 +32,7 @@ export default async function handler(req) {
 
     return new Response(readable, {
       headers: {
-        "Content-Type": "text/event-stream",
+        "Content-Type": "text/plain; charset=utf-8", // ← обычный текст
         "Cache-Control": "no-cache",
       },
     });
