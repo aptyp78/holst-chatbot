@@ -1,1 +1,128 @@
-html<br><!DOCTYPE html><html><head><meta charset="UTF-8"><style>body{font-family:sans-serif;margin:0;display:flex;flex-direction:column;height:100vh}#chat{flex:1;overflow-y:auto;padding:1rem}#form{display:flex}#prompt{flex:1}</style></head><body><div id="chat"></div><form id="form"><input id="prompt" autocomplete="off"><button>Send</button></form><script>const chat=document.getElementById("chat");const hist=[];function add(r,t){const d=document.createElement("div");d.textContent=(r==="user"?"👤":"🤖")+" "+t;chat.appendChild(d);chat.scrollTop=chat.scrollHeight}document.getElementById("form").onsubmit=async e=>{e.preventDefault();const msg=prompt.value.trim();if(!msg)return;add("user",msg);prompt.value="";const resp=await fetch("/api/chat",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({message:msg})});const reader=resp.body.getReader();let ai="";for(;;){const {done,value}=await reader.read();if(done)break;ai+=new TextDecoder().decode(value);add("assistant",ai)}};</script></body></html>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Holst Chatbot</title>
+
+  <style>
+    :root {
+      --bg: #fff;
+      --fg: #000;
+    }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg: #1e1e1e;
+        --fg: #f3f3f3;
+      }
+    }
+
+    body {
+      margin: 0;
+      font-family: system-ui, sans-serif;
+      background: var(--bg);
+      color: var(--fg);
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+    }
+
+    #chat {
+      flex: 1;
+      overflow-y: auto;
+      padding: 1rem;
+    }
+
+    #form {
+      display: flex;
+      border-top: 1px solid #ccc;
+    }
+
+    #prompt {
+      flex: 1;
+      padding: 0.75rem;
+      border: none;
+      outline: none;
+      background: var(--bg);
+      color: var(--fg);
+    }
+
+    button {
+      padding: 0 1.25rem;
+      border: none;
+      background: #0070f3;
+      color: #fff;
+      cursor: pointer;
+    }
+
+    button:disabled {
+      background: #888;
+      cursor: default;
+    }
+
+    .msg {
+      margin-bottom: 0.75rem;
+      line-height: 1.45;
+      white-space: pre-wrap;
+    }
+
+    .user   { font-weight: 600; }
+    .bot    { }
+  </style>
+</head>
+<body>
+  <div id="chat"></div>
+
+  <form id="form" autocomplete="off">
+    <input id="prompt" placeholder="Type your message…" />
+    <button type="submit">Send</button>
+  </form>
+
+  <script>
+    const chat    = document.getElementById('chat');
+    const prompt  = document.getElementById('prompt');
+    const form    = document.getElementById('form');
+
+    // helpers
+    const add = (cls, text) => {
+      const div = document.createElement('div');
+      div.className = `msg ${cls}`;
+      div.textContent = text;
+      chat.appendChild(div);
+      chat.scrollTop = chat.scrollHeight;
+    };
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const text = prompt.value.trim();
+      if (!text) return;
+
+      add('user', text);
+      prompt.value = '';
+      prompt.focus();
+
+      // fetch SSE stream from API
+      const res    = await fetch('/api/chat', {
+        method : 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body   : JSON.stringify({ message: text })
+      });
+
+      if (!res.ok || !res.body) {
+        add('bot', '[Error from server]');
+        return;
+      }
+
+      const reader = res.body.getReader();
+      const dec    = new TextDecoder('utf-8');
+      let buffer   = '';
+
+      while (true) {
+        const { value, done } = await reader.read();
+        if (done) break;
+        buffer += dec.decode(value, { stream: true });
+        add('bot', buffer);
+      }
+    });
+  </script>
+</body>
+</html>
