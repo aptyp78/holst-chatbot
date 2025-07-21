@@ -1,0 +1,1 @@
+json<br>{<br> "name": "holst-chatbot",<br> "type": "module",<br> "dependencies": {<br> "openai": "^4.0.0"<br> }<br>}<br>
