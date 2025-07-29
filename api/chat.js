@@ -14,10 +14,12 @@ export default async function handler(req) {
   }
 
   const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+  // Select model according to OPENAI_MODEL env var, fall back to gpt-4o-mini
+  const model = process.env.OPENAI_MODEL || "gpt-4o-mini";
 
   try {
     const completion = await openai.chat.completions.create({
-      model: "gpt-4o-mini",                    // при желании замените на другую модель
+      model,
       messages: [{ role: "user", content: message }],
       stream: true,
     });
